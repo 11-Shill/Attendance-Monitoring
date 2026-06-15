@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Students Management</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial,sans-serif;
+            background:#f4f6f9;
+        }
+
+        .header{
+            background:#0d6efd;
+            color:white;
+            text-align:center;
+            padding:20px;
+        }
+
+        .container{
+            padding:20px;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:12px;
+            box-shadow:0 2px 10px rgba(0,0,0,.1);
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            margin-bottom:20px;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th{
+            background:#0d6efd;
+            color:white;
+            padding:12px;
+            text-align:left;
+        }
+
+        td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+        }
+
+        tr:hover{
+            background:#f1f1f1;
+        }
+
+        .nav{
+            margin-bottom:20px;
+        }
+
+        .nav a{
+            text-decoration:none;
+            background:#0d6efd;
+            color:white;
+            padding:10px 15px;
+            border-radius:6px;
+            margin-right:10px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Students Management</h1>
+</div>
+
+<div class="container">
+
+    <div class="nav">
+
+        <a href="dashboard.html">
+            Dashboard
+        </a>
+
+        <a href="student-registration.html">
+            Register Student
+        </a>
+
+    </div>
+
+    <div class="card">
+
+        <input
+            type="text"
+            id="searchBox"
+            placeholder="Search by USN or Name..."
+            onkeyup="filterStudents()">
+
+        <table>
+
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>USN</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Email</th>
+            </tr>
+            </thead>
+
+            <tbody id="studentBody">
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+
+if(
+    sessionStorage.getItem(
+        "loggedIn"
+    ) !== "true"
+){
+    window.location.href =
+        "login.html";
+}
+
+let students = [];
+
+async function loadStudents() {
+
+    const response =
+        await fetch("/students");
+
+    students =
+        await response.json();
+
+    students.sort(
+        (a,b) => a.id - b.id
+    );
+
+    renderTable(students);
+}
+
+function renderTable(data) {
+
+    const studentBody =
+        document.getElementById(
+            "studentBody"
+        );
+
+    studentBody.innerHTML = "";
+
+    data.forEach(student => {
+
+        studentBody.innerHTML += `
+            <tr>
+                <td>${student.id}</td>
+                <td>${student.usn}</td>
+                <td>${student.name}</td>
+                <td>${student.department}</td>
+                <td>${student.email}</td>
+            </tr>
+        `;
+    });
+}
+
+function filterStudents() {
+
+    const search =
+        document.getElementById(
+            "searchBox"
+        ).value.toLowerCase();
+
+    const filtered =
+        students.filter(student =>
+
+            student.usn
+                .toLowerCase()
+                .includes(search)
+
+            ||
+
+            student.name
+                .toLowerCase()
+                .includes(search)
+        );
+
+    renderTable(filtered);
+}
+
+window.onload =
+    loadStudents;
+
+</script>
+
+</body>
+</html>

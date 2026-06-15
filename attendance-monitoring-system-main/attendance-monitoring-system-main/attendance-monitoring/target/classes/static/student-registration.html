@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Registration</title>
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+}
+
+.header{
+    background:#0d6efd;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    display:flex;
+    gap:20px;
+    padding:20px;
+}
+
+.card{
+    flex:1;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+.card h2{
+    margin-bottom:15px;
+}
+
+.card input{
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+}
+
+button{
+    background:#0d6efd;
+    color:white;
+    border:none;
+    padding:12px 16px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:10px;
+    margin-right:10px;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+video{
+    width:100%;
+    border-radius:8px;
+}
+
+.preview-card{
+    background:white;
+    margin:20px;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+#preview{
+    width:300px;
+    border-radius:8px;
+}
+
+.status-bar{
+    margin:20px;
+    padding:15px;
+    background:#198754;
+    color:white;
+    border-radius:8px;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+<div class="header">
+    <h1>Attendance Monitoring System</h1>
+    <p>Student Registration Portal</p>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Student Details</h2>
+
+        <input type="text" id="usn" placeholder="Enter USN">
+
+        <input type="text" id="name" placeholder="Enter Student Name">
+
+        <input type="text" id="department" placeholder="Enter Department">
+
+        <input type="email" id="email" placeholder="Enter Email">
+
+        <button onclick="startCamera()">
+            Start Camera
+        </button>
+
+        <button onclick="saveStudent()">
+            Register Student
+        </button>
+    </div>
+
+    <div class="card">
+        <h2>Live Camera</h2>
+
+        <video id="video" autoplay></video>
+
+        <canvas id="canvas"
+                width="400"
+                height="300"
+                style="display:none;">
+        </canvas>
+
+        <button onclick="capturePhoto()">
+            Capture Face
+        </button>
+    </div>
+
+</div>
+
+<div class="preview-card">
+    <h2>Captured Face Preview</h2>
+    <img id="preview">
+</div>
+
+<div class="status-bar" id="statusBar">
+    Status: Ready
+</div>
+<script>
+    if(
+    sessionStorage.getItem(
+        "loggedIn"
+    ) !== "true"
+){
+    window.location.href =
+        "login.html";
+}
+   let allFaceData = [];
+let savedStudentId = null;
+
+let faceCaptured = false;
+let capturedDescriptor = null;
+function resetForm() {
+
+    document.getElementById("usn").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("department").value = "";
+    document.getElementById("email").value = "";
+
+    document.getElementById("preview").src = "";
+
+    faceCaptured = false;
+    capturedDescriptor = null;
+    savedStudentId = null;
+
+    updateStatus("Ready for Next Student", "#0d6efd");
+    const video = document.getElementById("video");
+
+if (video.srcObject) {
+
+    video.srcObject.getTracks().forEach(track => {
+        track.stop();
+    });
+
+    video.srcObject = null;
+}
+}
+   async function startCamera() {
+
+    const usn = document.getElementById("usn").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const department = document.getElementById("department").value.trim();
+    const email = document.getElementById("email").value.trim();
+
+  if (!usn || !name || !department || !email) {
+    updateStatus(
+        "Please fill all student details before starting the camera",
+        "#dc3545"
+    );
+    return;
+}
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: true
+    });
+
+    document.getElementById("video").srcObject = stream;
+    updateStatus("Camera Started", "#0d6efd");
+}
+async function capturePhoto() {
+
+   const video = document.getElementById("video");
+
+if (!video.srcObject) {
+    updateStatus(
+        "Please start the camera first",
+        "#dc3545"
+    );
+    return;
+}
+    const canvas = document.getElementById("canvas");
+
+    const context = canvas.getContext("2d");
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/png");
+    document.getElementById("preview").src = imageData;
+
+    const detection = await faceapi
+        .detectSingleFace(
+            canvas,
+            new faceapi.TinyFaceDetectorOptions()
+        )
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+   if (detection) {
+
+    const descriptorArray = Array.from(detection.descriptor);
+
+capturedDescriptor = descriptorArray;
+faceCaptured = true;
+updateStatus("Face Captured Successfully", "#198754");
+let matchedStudentId = null;
+let bestDistance = Number.MAX_VALUE;
+
+for (const faceData of allFaceData) {
+
+    const storedDescriptor = JSON.parse(faceData.descriptor);
+
+    const distance = euclideanDistance(
+        descriptorArray,
+        storedDescriptor
+    );
+
+    console.log(faceData);
+    console.log("Distance:", distance);
+
+    if (distance < bestDistance && faceData.studentId != null) {
+        bestDistance = distance;
+        matchedStudentId = faceData.studentId;
+    }
+}
+
+console.log("Best Distance:", bestDistance);
+console.log("Matched Student:", matchedStudentId);
+if (bestDistance < 0.45) {
+
+    await fetch(`/attendance/${matchedStudentId}`, {
+        method: "POST"
+    });
+
+    alert("Attendance Marked for Student ID: " + matchedStudentId);
+
+} else {
+
+    alert("Face Not Recognized");
+}
+    await fetch("/face-data", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            studentId: savedStudentId,
+            descriptor: JSON.stringify(descriptorArray)
+        })
+    });
+
+    alert("Face Descriptor Saved");
+
+} else {
+    updateStatus("No Face Detected", "#dc3545");
+}
+}
+function updateStatus(message, color = "#198754") {
+    const statusBar = document.getElementById("statusBar");
+    statusBar.innerText = "Status: " + message;
+    statusBar.style.background = color;
+}
+
+async function saveStudent() {
+    if (!faceCaptured) {
+    updateStatus(
+        "Please capture face before registering student",
+        "#dc3545"
+    );
+    return;
+}
+
+    const student = {
+        usn: document.getElementById("usn").value,
+        name: document.getElementById("name").value,
+        department: document.getElementById("department").value,
+        email: document.getElementById("email").value,
+        photoPath: ""
+    };
+    
+
+    const response = await fetch("/students", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(student)
+    });
+
+    const data = await response.json();
+
+    savedStudentId = data.id;
+
+updateStatus(
+    "Student Registered Successfully",
+    "#198754"
+);
+
+setTimeout(() => {
+    resetForm();
+}, 2000);
+}
+
+async function loadModels() {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+
+    console.log("Models Loaded");
+}
+
+window.onload = async () => {
+    await loadModels();
+    await loadFaceData();
+};
+
+async function loadFaceData() {
+
+    const response = await fetch("/face-data");
+    allFaceData = await response.json();
+
+  console.log(JSON.stringify(allFaceData, null, 2));
+}
+
+function euclideanDistance(arr1, arr2) {
+
+    let sum = 0;
+
+    for (let i = 0; i < arr1.length; i++) {
+        sum += Math.pow(arr1[i] - arr2[i], 2);
+    }
+
+    return Math.sqrt(sum);
+}
+</script>
+
+</body>
+</html>

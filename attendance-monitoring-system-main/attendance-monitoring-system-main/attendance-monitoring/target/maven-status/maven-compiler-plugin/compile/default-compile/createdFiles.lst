@@ -1,0 +1,15 @@
+com\dhiware\attendance_monitoring\entity\Student.class
+com\dhiware\attendance_monitoring\service\FaceDataService.class
+com\dhiware\attendance_monitoring\repository\FaceDataRepository.class
+com\dhiware\attendance_monitoring\controller\HomeController.class
+com\dhiware\attendance_monitoring\repository\StudentRepository.class
+com\dhiware\attendance_monitoring\service\StudentService.class
+com\dhiware\attendance_monitoring\config\BrowserLauncher.class
+com\dhiware\attendance_monitoring\repository\AttendanceRepository.class
+com\dhiware\attendance_monitoring\controller\StudentController.class
+com\dhiware\attendance_monitoring\controller\FaceDataController.class
+com\dhiware\attendance_monitoring\controller\AttendanceController.class
+com\dhiware\attendance_monitoring\service\AttendanceService.class
+com\dhiware\attendance_monitoring\AttendanceMonitoringApplication.class
+com\dhiware\attendance_monitoring\entity\FaceData.class
+com\dhiware\attendance_monitoring\entity\Attendance.class

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Records</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial,sans-serif;
+            background:#f4f6f9;
+        }
+
+        .header{
+            background:#0d6efd;
+            color:white;
+            text-align:center;
+            padding:20px;
+        }
+
+        .container{
+            padding:20px;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:12px;
+            box-shadow:0 2px 10px rgba(0,0,0,.1);
+        }
+
+        input{
+            width:100%;
+            padding:12px;
+            margin-bottom:20px;
+            border:1px solid #ccc;
+            border-radius:6px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th{
+            background:#0d6efd;
+            color:white;
+            padding:12px;
+            text-align:left;
+        }
+
+        td{
+            padding:12px;
+            border-bottom:1px solid #ddd;
+        }
+
+        tr:hover{
+            background:#f1f1f1;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Attendance Monitoring System</h1>
+    <p>Attendance Records</p>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <input
+            type="text"
+            id="searchBox"
+            placeholder="Search by USN or Name..."
+            onkeyup="filterTable()">
+
+        <table id="attendanceTable">
+
+            <thead>
+            <tr>
+    <th>ID</th>
+    <th>USN</th>
+    <th>Name</th>
+    <th>Department</th>
+    <th>Date</th>
+    <th>Login Time</th>
+    <th>Logout Time</th>
+    <th>Status</th>
+</tr>
+            </thead>
+
+            <tbody id="tableBody">
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script>
+    if(
+    sessionStorage.getItem(
+        "loggedIn"
+    ) !== "true"
+){
+    window.location.href =
+        "login.html";
+}
+
+let attendanceData = [];
+let students = [];
+
+async function loadAttendance() {
+
+    const response =
+        await fetch("/attendance");
+
+    attendanceData =
+        await response.json();
+
+   attendanceData.sort((a, b) => b.id - a.id);
+
+    renderTable(attendanceData);
+}
+
+function renderTable(data) {
+
+    const tableBody =
+        document.getElementById("tableBody");
+
+    tableBody.innerHTML = "";
+
+    data.forEach(record => {
+
+        const student =
+            students.find(
+                s => s.id === record.studentId
+            );
+
+        const usn =
+            student ? student.usn : "N/A";
+
+        const name =
+            student ? student.name : "N/A";
+
+        const department =
+            student ? student.department : "N/A";
+
+        const loginTime =
+            record.loginTime
+                ? new Date(
+                    record.loginTime
+                  ).toLocaleString()
+                : "-";
+
+        const logoutTime =
+            record.logoutTime
+                ? new Date(
+                    record.logoutTime
+                  ).toLocaleString()
+                : "-";
+
+        tableBody.innerHTML += `
+            <tr>
+                <td>${record.id}</td>
+                <td>${usn}</td>
+                <td>${name}</td>
+                <td>${department}</td>
+                <td>${record.attendanceDate}</td>
+                <td>${loginTime}</td>
+                <td>${logoutTime}</td>
+                <td>${record.status}</td>
+            </tr>
+        `;
+    });
+}
+function filterTable() {
+
+    const search =
+        document.getElementById(
+            "searchBox"
+        ).value.toLowerCase();
+
+    const filtered =
+        attendanceData.filter(record => {
+
+            const student =
+                students.find(
+                    s => s.id === record.studentId
+                );
+
+            if (!student) return false;
+
+            return (
+                student.usn
+                    .toLowerCase()
+                    .includes(search)
+                ||
+                student.name
+                    .toLowerCase()
+                    .includes(search)
+            );
+        });
+
+    renderTable(filtered);
+}
+
+
+window.onload = async () => {
+
+    const studentResponse =
+        await fetch("/students");
+
+    students =
+        await studentResponse.json();
+
+    await loadAttendance();
+};
+</script>
+
+</body>
+</html>
